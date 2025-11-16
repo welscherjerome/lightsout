@@ -79,10 +79,11 @@ class Solver:
             self.ained.print_board(pos[0], pos[1], N, N)
 
         while self.ained.game_not_over(pos[0], pos[1], N, N) and count != num_steps - 1:
-            self.strategy.solve(N, pos)
-            if print_board:
-                self.visualise(count, pos, N)
-            count += 1
+            step_taken = self.strategy.solve(N, pos)
+            if step_taken:
+                if print_board:
+                    self.visualise(count, pos, N)
+                count += 1
 
         success = not self.ained.game_not_over(pos[0], pos[1], N, N)
         self.save_verdict(savefile_name, attempt, count + 1, success, N)
@@ -110,7 +111,7 @@ class Solver:
 
             self.strategy = self.strategies[self.strategy_name](self.ained) # Reset the strategy to its initial state
 
-            os.makedirs("data/" + savefile_name, exist_ok=True)
+            os.makedirs("data/" + str(self.strategy) + "/" + savefile_name, exist_ok=True)
             savefile_name = str(self.strategy) + "/" + savefile_name # Each simulation file is stored in their respective strategy folder
 
             string = f"Simulation {curr_sim_num} "

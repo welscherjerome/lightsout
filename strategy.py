@@ -14,7 +14,7 @@ class Strategy(ABC):
     The Solver then uses this interface to call the algorithm defined by Concrete Strategies.
 
     Each strategy is supposed to calculate which cell to flip and also flip it. After flipping a cell, it should return a boolean.
-    The purpose of the boolean is for debugging purposes if any logging is to be implemented.
+    The purpose of the boolean is for debugging purposes if any logging is to be implemented or to keep track whether a step was taken or not.
     """
     def __init__(self, ained: AiNed):
         self.ained = ained
@@ -107,10 +107,10 @@ class SimAnnStrategy(Strategy):
             writer.writerow(columns)  
 
         self.curr_step = 1
-        self.start_T = 20.0
-        self.min_T = 0.05
+        self.start_T = 10.0
+        self.min_T = 1
         self.T = self.start_T
-        self.cool = 0.99
+        self.cool = 0.95
         self.acceptance_window = 1000
         self.recent_accepts = list()
 
@@ -124,18 +124,18 @@ class SimAnnStrategy(Strategy):
             self.ained.flip_lights(pos[0], pos[1], N, N, row, col)
             newer_board = self.ained.get_board(pos[0], pos[0], N, N)
             self.save_step(curr_energy, (row, col), proposed_energy, newer_board, accepted=True)
+            self.cool_down()
+            self.show_temp()
+            return True
         else:
             self.save_step(curr_energy, (row, col), proposed_energy, board, accepted=False)
-            self.solve(N, pos)
+            self.cool_down()
+            return False
         
-        self.T *= self.cool
-        self.T = max(self.min_T, self.T)
-        # self.show_temp()
-        return True
 
     def save_step(self, curr_energy: int, proposed_step: tuple[int, int], new_energy: int, accepted_board: list[int], accepted: bool):
         """
-        Special function that logs and keeps track of energy and board states throughout Simulated Annealing.$
+        Special function that logs and keeps track of energy and board states throughout Simulated Annealing.
         It also keeps track of the acceptance ratio via the recently accepted steps.
         """
 
@@ -153,12 +153,16 @@ class SimAnnStrategy(Strategy):
     def __str__(self):
         return "SimAnn"
 
+    def cool_down(self):
+        self.T *= self.cool
+        self.T = max(self.min_T, self.T)
+
     def show_temp(self):
         """ Print the current temperature and acceptance ratio """
         A = sum(self.recent_accepts) / len(self.recent_accepts)
         print(f"Current Accept Rate: {A:0.2f}, Current Heat: {self.T:0.2f}")
 
-    def estimate_energy(self, board: list[int], N: int, row: int, col: int, num_estimations=25):
+    def estimate_energy(self, board: list[int], N: int, row: int, col: int, num_estimations=10):
         """ Estimate the likely energy of a given board state after flipping a light """
         estimated_energies = list()
         for i in range(num_estimations):
