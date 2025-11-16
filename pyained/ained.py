@@ -1,3 +1,4 @@
+"""
 /*
  * Copyright (c) 2025 Jérôme Welscher
  *
@@ -19,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+"""
 
 import ctypes
 import os
