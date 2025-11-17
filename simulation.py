@@ -74,7 +74,7 @@ class Solver:
             writer = csv.writer(f)
             writer.writerow(new_row)
 
-    def run_simulation_solve(self, N: int, pos: tuple[int, int], savefile_name: str, num_steps=-1, attempt=1, print_board=False, initial_state: list=None):
+    def run_simulation_solve(self, N: int, pos: tuple[int, int], savefile_location: str, num_steps=-1, attempt=1, print_board=False, initial_state: list=None):
         """
         Runs a single simulation until either num_steps is reached or the game is successfully solved.
 
@@ -110,7 +110,7 @@ class Solver:
                 count += 1
 
         success = not self.ained.game_not_over(pos[0], pos[1], N, N)
-        self.save_verdict(savefile_name, attempt, count + 1, success, N)
+        self.save_verdict(savefile_location, attempt, count + 1, success, N)
 
         return success
 
@@ -134,12 +134,12 @@ class Solver:
             self.ained.clear() # wipe *the whole* ained memory clear before each simulation
 
             self.strategy = self.strategies[self.strategy_name](self.ained) # Reset the strategy to its initial state
-
-            os.makedirs("data/" + str(self.strategy) + "/" + savefile_name, exist_ok=True)
-            savefile_name = str(self.strategy) + "/" + savefile_name # Each simulation file is stored in their respective strategy folder
+            
+            os.makedirs("data/" + str(self.strategy), exist_ok=True)
+            savefile_location = str(self.strategy) + "/" + savefile_name # Each simulation file is stored in their respective strategy folder
 
             string = f"Simulation {curr_sim_num} "
-            string += "was a success!" if self.run_simulation_solve(N, pos, savefile_name, num_steps, curr_sim_num, print_boards, initial_state) else "has failed!"
+            string += "was a success!" if self.run_simulation_solve(N, pos, savefile_location, num_steps, curr_sim_num, print_boards, initial_state) else "has failed!"
             print(string, "\n")
 
             curr_sim_num += 1
