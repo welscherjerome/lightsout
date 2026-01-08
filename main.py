@@ -1,6 +1,6 @@
 """
 /*
- * Copyright (c) 2025 Jérôme Welscher
+ * Copyright (c) 2026 Jérôme Welscher
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
  */
  """
 
-#!/usr/bin/env python3
+
 import argparse
 from pyained.ained import AiNed
 from simulation import Solver, Sampler
@@ -54,7 +54,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "-m", "--method", type=str, choices=["greedy", "stochastic", "simann", "MCMC"], default="greedy",
+        "-m", "--method", type=str, choices=["greedy", "stochastic", "simann", "simannAdapt", "simannGreedyCluster", "MCMC", "MCMCAdvanced"], default="greedy",
         help="[Optional] Method to use (e.g., greedy, MCMC, etc.) [default is greedy]"
     )
     parser.add_argument(
@@ -68,6 +68,10 @@ def parse_args():
     parser.add_argument(
         "-d", "--distance", type=str, choices=["manhattan", "euclidean"], default = "euclidean",
         help="[Optional] Distance formula for the coefficient calculation [default is euclidean]"
+    )
+    parser.add_argument(
+        "-p", "--pos", nargs=2, type=int, default = [0, 0],
+        help="[Optional] Position where simulation is performed in the memory"
     )
 
     return parser.parse_args()
@@ -84,13 +88,10 @@ def main():
         ained.set_coefficients_euclidean(args.coeff)
     
     if args.method == "MCMC": # Use sampler simulation
-        pos = 0, 0
-        method = Sampler(sampler_name=args.method, ained=ained)
+        method = Sampler(sampler_name=args.method, ained=ained, pos=args.pos, N=args.size)
 
         if args.num_iter > 0:
             method.multiple_sample_chains(
-                N=args.size,
-                pos=pos,
                 num_steps=args.num_steps,
                 num_chain=args.num_iter,
                 print_boards=args.show
@@ -99,8 +100,7 @@ def main():
         print("Sampling success!")
 
     else: # Use solver simulation
-        method = Solver(strategy_name=args.method, ained=ained)
-        pos = 0, 0
+        method = Solver(strategy_name=args.method, ained=ained, pos=args.pos, N=args.size)
 
         if args.initial_state is not None:
             with open(args.initial_state, "r") as f:
@@ -110,8 +110,6 @@ def main():
 
         if args.num_iter > 0:
             method.multiple_simulations(
-                N=args.size,
-                pos=pos,
                 savefile_name=args.savefile,
                 num_sim=args.num_iter,
                 num_steps=args.num_steps,
