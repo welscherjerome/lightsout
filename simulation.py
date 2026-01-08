@@ -1,6 +1,6 @@
-"""
+"""§
 /*
- * Copyright (c) 2025 Jérôme Welscher
+ * Copyright (c) 2026 Jérôme Welscher
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,13 +25,13 @@
 from pyained.ained import AiNed
 import strategy
 import sampler
-import random
 import os
 import csv
+import time
 
 
 class Solver:
-    def __init__(self, strategy_name: str, ained: AiNed):
+    def __init__(self, strategy_name: str, ained: AiNed, pos: tuple[int, int], N: int):
         """
         Initialises strategy and board for solving simulations.
 
@@ -45,12 +45,15 @@ class Solver:
         self.strategies = {
                     "greedy": strategy.GreedyStrategy,
                     "stochastic": strategy.StochasticStrategy,
-                    "simann": strategy.SimAnnStrategy
+                    "simann": strategy.SimAnnStrategy,
+                    "simannAdapt": strategy.SimAnnAdaptStrategy
                     }
+        
+        self.pos = pos
+        self.N = N
+        self.strategy = None
 
-        self.strategy: strategy.Strategy = self.strategies[self.strategy_name](self.ained)
-
-    def save_verdict(self, savefile_name: str, attempt: int, num_steps: int, success: bool, N: int):
+    def save_verdict(self, savefile_name: str, attempt: int, num_steps: int, success: bool, runtime: float):
         """
         This function writes to the csv file that collects all the important data from simulations.
         It is called at the end of a simulation to save all the important data from that simulation.
@@ -63,18 +66,18 @@ class Solver:
         """
         csv_file = savefile_name + ".csv"
         coeff = self.ained.get_coefficients()[1]
-        columns =  ["board_size", "strategy", "attempt", "step_count", "factor", "success"]
+        columns =  ["board_size", "strategy", "attempt", "step_count", "factor", "success", "runtime"]
         os.makedirs("data", exist_ok=True)
         if not os.path.exists("data/" + csv_file):
             with open("data/" + csv_file, "w", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(columns)       
-        new_row = [N, str(self.strategy), attempt, num_steps, round(coeff, 2), success]
+        new_row = [self.N, str(self.strategy), attempt, num_steps, round(coeff, 2), success, runtime]
         with open("data/" + csv_file, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(new_row)
 
-    def run_simulation_solve(self, N: int, pos: tuple[int, int], savefile_location: str, num_steps=-1, attempt=1, print_board=False, initial_state: list=None):
+    def run_simulation_solve(self, savefile_location: str, num_steps=-1, attempt=1, print_board=False, initial_state: list=None):
         """
         Runs a single simulation until either num_steps is reached or the game is successfully solved.
 
@@ -89,32 +92,33 @@ class Solver:
         :return: Whether the game was successfully solved or not.
         """
         if initial_state is not None:
-            self.ained.reconstruct_board(initial_state, pos[0], pos[1], N, N)
+            self.ained.reconstruct_board(initial_state, self.pos[0], self.pos[1], self.N, self.N)
         else:
             # Randomly initialise a board
-            for i in range(N):
-                self.ained.set_bit(pos[0] + random.randint(0, N), pos[1] + random.randint(0, N), 1)
-                self.ained.set_bit(pos[0] + random.randint(0, N), pos[1] + random.randint(0, N), 1)
-                self.ained.commit()
+            self.ained.construct_random_board(self.pos[0], self.pos[1], self.N, self.N)
 
         count = 0
 
         if print_board:
-            self.ained.print_board(pos[0], pos[1], N, N)
-
-        while self.ained.game_not_over(pos[0], pos[1], N, N) and count != num_steps - 1:
-            step_taken = self.strategy.solve(N, pos)
+            self.ained.print_board(self.pos[0], self.pos[1], self.N, self.N)
+        
+        initial_t = time.time()
+        while self.ained.game_not_over(self.pos[0], self.pos[1], self.N, self.N) and count != num_steps - 1:
+            step_taken = self.strategy.solve()
             if step_taken:
                 if print_board:
-                    self.visualise(count, pos, N)
+                    self.visualise(count)
                 count += 1
+        final_t = time.time()
 
-        success = not self.ained.game_not_over(pos[0], pos[1], N, N)
-        self.save_verdict(savefile_location, attempt, count + 1, success, N)
+        runtime = final_t - initial_t
+
+        success = not self.ained.game_not_over(self.pos[0], self.pos[1], self.N, self.N)
+        self.save_verdict(savefile_location, attempt, count + 1, success, runtime)
 
         return success
 
-    def multiple_simulations(self, N: int, pos: tuple[int, int], savefile_name: str, num_sim=1, num_steps=-1, print_boards=False, initial_state: list=None):
+    def multiple_simulations(self, savefile_name: str, num_sim=1, num_steps=-1, print_boards=False, initial_state: list=None):
         """
         Run multiple simulations consecutively.
 
@@ -131,29 +135,29 @@ class Solver:
 
         while curr_sim_num <= num_sim:
             print(f"Running simulation number {curr_sim_num}...")
-            self.ained.clear() # wipe *the whole* ained memory clear before each simulation
+            self.ained.clear_word(self.pos[0], self.pos[1]) # wipe *the whole* ained memory clear before each simulation
 
-            self.strategy = self.strategies[self.strategy_name](self.ained) # Reset the strategy to its initial state
+            self.strategy = self.strategies[self.strategy_name](self.ained, self.pos, self.N) # Reset the strategy to its initial state
             
             os.makedirs("data/" + str(self.strategy), exist_ok=True)
             savefile_location = str(self.strategy) + "/" + savefile_name # Each simulation file is stored in their respective strategy folder
 
             string = f"Simulation {curr_sim_num} "
-            string += "was a success!" if self.run_simulation_solve(N, pos, savefile_location, num_steps, curr_sim_num, print_boards, initial_state) else "has failed!"
+            string += "was a success!" if self.run_simulation_solve(savefile_location, num_steps, curr_sim_num, print_boards, initial_state) else "has failed!"
             print(string, "\n")
 
             curr_sim_num += 1
         print("Done!")
 
-    def visualise(self, count: int, pos: tuple[int, int], N: int):
+    def visualise(self, count: int):
         """Visualises simulation in the console"""
         print(f"Step {count + 1}:")
-        self.ained.print_board(pos[0], pos[1], N, N)
+        self.ained.print_board(self.pos[0], self.pos[1], self.N, self.N)
         print("\n")
 
 
 class Sampler:
-    def __init__(self, sampler_name: str, ained: AiNed):
+    def __init__(self, sampler_name: str, ained: AiNed, pos: tuple[int, int], N: int):
         """
         Initialises strategy and board for sampling the state space by walking through.
 
@@ -165,11 +169,14 @@ class Sampler:
 
         # Add samplers here
         self.samplers = {
-                    "MCMC": sampler.MCMC
+                    "MCMC": sampler.MCMC,
                     }
-        self.sampler = self.samplers[self.sampler_name](self.ained)
+        self.sampler = self.samplers[self.sampler_name](self.ained, pos, N)
+        self.i = self.sampler.i
+        self.pos = pos
+        self.N = N
 
-    def run_simulation_sample(self, N: int, pos: tuple[int, int], num_steps: int, print_board=False):
+    def run_simulation_sample(self, num_steps: int, print_board=False):
         """
         Runs a single simulation until num_steps is reached.
 
@@ -179,25 +186,22 @@ class Sampler:
         :param print_board: Whether the board should be printed to the console or not.
         """
         # Randomly initialise a board
-        for i in range(N):
-            self.ained.set_bit(pos[0] + random.randint(0, N), pos[1] + random.randint(0, N), 1)
-            self.ained.set_bit(pos[0] + random.randint(0, N), pos[1] + random.randint(0, N), 1)
-            self.ained.commit()
+        self.ained.construct_random_board(self.pos[0], self.pos[1], self.N, self.N)
 
         count = 1
 
         if print_board:
-            self.ained.print_board(pos[0], pos[1], N, N)
+            self.ained.print_board(self.pos[0], self.pos[1], self.N, self.N)
 
-        while count != num_steps:
-            self.sampler.sample(N, pos) # Follow the sampling strategy (samples should be tracked in some csv file)
+        while count <= num_steps:
+            self.sampler.sample() # Follow the sampling strategy (samples should be tracked in some csv file)
             if print_board:
                 print(f"Step {count}:")
-                self.ained.print_board(pos[0], pos[1], N, N)
+                self.ained.print_board(self.pos[0], self.pos[1], self.N, self.N)
                 print("\n")
             count += 1
 
-    def multiple_sample_chains(self, N: int, pos: tuple[int, int], num_steps: int, num_chain=1, print_boards=False):
+    def multiple_sample_chains(self, num_steps: int, num_chain=1, print_boards=False):
         """
         Run multiple chains consecutively in order to analyse convergence.
 
@@ -211,11 +215,11 @@ class Sampler:
         print(f"Running {num_chain} simulations.\n")
 
         while curr_iter <= num_chain:
-            self.sampler = self.samplers[self.sampler_name](self.ained) # Reset sampler to its initial state
+            self.sampler = self.samplers[self.sampler_name](self.ained, self.pos, self.N, self.i) # Reset sampler to its initial state
             print(f"Running simulation number {curr_iter}...")
-            self.ained.clear() # clear the *whole* AiNed module memory
+            self.ained.clear_word(self.pos[0], self.pos[1])
             string = f"Chain {curr_iter} completed"
-            self.run_simulation_sample(N, pos, num_steps, print_boards)
+            self.run_simulation_sample(num_steps, print_boards)
             print(string, "\n")
 
             curr_iter += 1
