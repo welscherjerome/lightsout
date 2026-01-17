@@ -1,6 +1,6 @@
 """
 /*
- * Copyright (c) 2025 Jérôme Welscher
+ * Copyright (c) 2026 Jérôme Welscher
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
  */
  """
 
-#!/usr/bin/env python3
+
 import argparse
 from pyained.ained import AiNed
 from simulation import Solver, Sampler

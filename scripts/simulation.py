@@ -1,6 +1,6 @@
 """§
 /*
- * Copyright (c) 2025 Jérôme Welscher
+ * Copyright (c) 2026 Jérôme Welscher
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@
 from pyained.ained import AiNed
 import strategy
 import sampler
-import random
 import os
 import csv
 import time
