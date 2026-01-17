@@ -171,7 +171,7 @@ The model for the Bachelor Thesis was trained on factors in the interval \[0.05,
 
 ## Issues and Questions
 
-If you encounter any issues or have any questions relating to my package, try to reach out to jerome.welscher@ru.nl
+If you encounter any issues or have any questions relating to my package, try to reach out to jerome.welscher@ru.nl (preferred) or welscherjerome@gmail.com (in case there is no response)
 
 I will not be in possession of the board anymore but I might be able to help from a distance given enough context.
 
