@@ -47,10 +47,15 @@ To run multiple processes concurrently via the command-line, simply set up multi
 - **It is recommended to run the boards on the top left corner of a word as they extend to the right and to the bottom. Example positions for board include:**
 
 	**- row: 0, column: 0**
+  
 	**- row: 16, column: 16**
+  
 	**- row: 0, column: 16**
+  
 	**- row: 16, column: 0**
+  
 	**- row: 32, column: 16**
+  
 	**- etc...**
 
 **Simply run the boards at positions that follow the 16 space pattern.**
