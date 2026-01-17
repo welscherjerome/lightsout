@@ -109,7 +109,7 @@ def train(epoch_num, train_load, val_load, model, optimizer, loss_fn, name):
     
         epoch_number += 1
 
-EPOCHS = 100
+EPOCHS = 201
 
 neural_model = MeanStdModel()
 neural_model_t = MeanStdModel()
