@@ -5,10 +5,9 @@
 ## Description
 
 This package is a Python wrapper around a modified version of the AiNed repository code.
-This package mainly allows for the implementatkon of the stochastic Lights Out game.
+This package mainly allows for the implementation of the stochastic Lights Out game.
 It does not provide all ained.c functions for use and instead only provides the necessary and most useful function for the Lights Out game.
 This package contains both C and Python code.
-
 
 ## Installation
 
@@ -37,7 +36,7 @@ Instantiate one or multiple AiNed objects to gain access to the shared memory.
 
 This function severs the connection to the shared memory and frees memory usage.
 
-_- Connection is automatically severd if the process is killed_
+_- Connection is automatically severed if the process is killed_
 
 _- This function is usually only necessary in programs that run multiple processes concurrently_
 
@@ -83,31 +82,31 @@ _- This function allows the program to run concurrently with other processes usi
 
 - **set\_coefficients\_euclidean(factor: float)**
 
-This function adjusts the _low_ coefficients using the euclidian distance formula. The factor argument must be in between 0 and 1.
+This function adjusts the _low_ coefficients using the euclidean distance formula. The factor argument must be in between 0 and 1.
 
-_- To resolve unexpected behavior, consider modifying the function to target high coefficients by setting the hardcoded argument to 0._
+_- To resolve unexpected behaviour, consider modifying the function to target high coefficients by setting the hardcoded argument to 0._
 
-_- For this implementation, generally only the low coefficitents matter (Probabilities of flipping from 0 to 1)_
+_- For this implementation, generally only the low coefficients matter (Probabilities of flipping from 0 to 1)_
 
 - **set\_coefficients\_manhattan(factor: float)**
 
 This function adjusts the _low_ coefficients using the manhattan distance formula. The factor argument must be in between 0 and 1.
 
-_- To resolve unexpected behavior, consider modifying the function to target high coefficients by setting the hardcoded argument to 0._
+_- To resolve unexpected behaviour, consider modifying the function to target high coefficients by setting the hardcoded argument to 0._
 
-_- For this implementation, generally only the low coefficitents matter (Probabilities of flipping from 0 to 1)_
+_- For this implementation, generally only the low coefficients matter (Probabilities of flipping from 0 to 1)_
 
 - **print\_coefficients()**
 
-This function prints the low coefficitens in a human-readable manner. 
+This function prints the low coefficients in a human-readable manner. 
 
-_- For this implementation, generally only the low coefficitents matter (Probabilities of flipping from 0 to 1)_
+_- For this implementation, generally only the low coefficients matter (Probabilities of flipping from 0 to 1)_
 
 - **get\_coefficients()**
 
 This function returns a python list of length 25 of all the bottom-right low coefficients in a 1D shape.
 
-_- For this implementation, generally only the low coefficitents matter (Probabilities of flipping from 0 to 1)_
+_- For this implementation, generally only the low coefficients matter (Probabilities of flipping from 0 to 1)_
 
 - **print\_board(start\_row, start\_col, num\_row, num\_col)**
 
@@ -134,7 +133,6 @@ Once finished, the constructed board is returned for further use.
 
 _- This function uses locks and may slow down processes that run concurrently._
 
-
 ## Recommended Use
 
 When planning on running multiple processes concurrently, it is recommended to work with the clear_word() method and to reduce the use of functions that lock the shared memory to a minimum. 
@@ -143,13 +141,11 @@ When planning the distance between boards, keep in mind the range of the stochas
 
 Concurrency is naturally improved in computationally heavy algorithms where data processing takes longer than taking steps.
 
-
-
 ## Issues and Questions
 
 If you encounter any issues or have any questions relating to my package, try to reach out to jerome.welscher@ru.nl
 
-I will not be in possesion of the board anymore but I might be able to help from a distance given enough context.
+I will not be in possession of the board anymore but I might be able to help from a distance given enough context.
 
 ## Citations
 
@@ -157,4 +153,4 @@ This code is built on top of the ained repository that provides the base framewo
 
 The license is provided at the root of this repository.
 
-[Original Github repository](https://github.com/AiNedMemory/AiNedMemory)
+[Original GitHub repository](https://github.com/AiNedMemory/AiNedMemory)
