@@ -26,6 +26,7 @@
 import random
 import csv
 import os
+import math
 import numpy as np
 from pyained.ained import AiNed
 from abc import ABC, abstractmethod
@@ -41,11 +42,13 @@ class Strategy(ABC):
     Each strategy is supposed to calculate which cell to flip and also flip it. After flipping a cell, it should return a boolean.
     The purpose of the boolean is for debugging purposes if any logging is to be implemented or to keep track whether a step was taken or not.
     """
-    def __init__(self, ained: AiNed):
+    def __init__(self, ained: AiNed, pos: tuple[int, int], N: int):
+        self.N = N
+        self.pos = pos
         self.ained = ained
     
     @abstractmethod
-    def solve(self, N: int, pos: tuple[int, int]) -> bool:
+    def solve(self) -> bool:
         pass
     
     @abstractmethod
@@ -57,13 +60,13 @@ class StochasticStrategy(Strategy):
     """
     A very simple stochastic strategy that simply chooses a random light to flip.
     """
-    def __init__(self, ained: AiNed):
-        super().__init__(ained)
+    def __init__(self, ained: AiNed, pos: tuple[int, int], N: int):
+        super().__init__(ained, pos, N)
     
-    def solve(self, N: int, pos: tuple[int, int]) -> bool:
-        row = int(random.randint(0, N))
-        column = int(random.randint(0, N))
-        self.ained.flip_lights(pos[0], pos[1], N, N, row, column)
+    def solve(self) -> bool:
+        row = int(random.randint(0, self.N))
+        column = int(random.randint(0, self.N))
+        self.ained.flip_lights(row, column)
         return True
 
     def __str__(self):
@@ -74,25 +77,25 @@ class GreedyStrategy(Strategy):
     """
     A greedy strategy that chooses the light that is the most likely to turn off as many lights as possible while minimising the amount of lights that turn on.
     """
-    def __init__(self, ained: AiNed):
-        super().__init__(ained)
+    def __init__(self, ained: AiNed, pos: tuple[int, int], N: int):
+        super().__init__(ained, pos, N)
 
-    def solve(self, N: int, pos: tuple[int, int]) -> bool:
+    def solve(self) -> bool:
         min_delta_coords = (0, 0)
         min_delta = float("inf")
-        current_board = self.ained.get_board(pos[0], pos[1], N, N)
+        current_board = self.ained.get_board(self.pos[0], self.pos[1], self.N, self.N)
         current_coefficients = self.ained.get_coefficients()
         for i in range(len(current_board)):
-            current_row = i // N
-            current_col = i % N
+            current_row = i // self.N
+            current_col = i % self.N
             temp_delta = 0
             for j in range(len(current_board)):
                 if j == i:
                     if current_board[i] == 0:
                         temp_delta += self.greedy_eval(current_board[i], current_coefficients[0])
                     continue
-                respective_row = j // N
-                respective_col = j % N
+                respective_row = j // self.N
+                respective_col = j % self.N
 
                 row_diff = abs(respective_row - current_row)
                 col_diff = abs(respective_col - current_col)
@@ -101,7 +104,7 @@ class GreedyStrategy(Strategy):
             if temp_delta < min_delta:
                 min_delta_coords = (current_row, current_col)
                 min_delta = min(min_delta, temp_delta)
-        self.ained.flip_lights(pos[0], pos[1], N, N, min_delta_coords[0], min_delta_coords[1])
+        self.ained.flip_lights(self.pos[0], self.pos[1], self.N, self.N, min_delta_coords[0], min_delta_coords[1])
         return True
 
     def greedy_eval(self, light_value: int, probability: float) -> float:
@@ -114,67 +117,33 @@ class GreedyStrategy(Strategy):
 
 class SimAnnStrategy(Strategy):
     """ A simulated annealing strategy that is based on MCMC with a decreasing temperature. """
-    def __init__(self, ained: AiNed):
-        super().__init__(ained)
+    def __init__(self, ained: AiNed, pos: tuple[int, int], N: int):
+        super().__init__(ained, pos, N)
         self.ained = ained
-        os.makedirs("data/SimAnnRuns", exist_ok=True)
-        columns = ["curr_step", "curr_energy", "proposed_step", "proposed_energy", "accepted_board", "accepted_bool"]
-        
-        # Name file
-        self.i = 1
-        self.file_name = "SimAnn_simulation_"
-        while os.path.exists(f"data/SimAnnRuns/{self.file_name}{self.i}.csv"):
-            self.i += 1
-
-        # Add columns if file is new
-        with open(f"data/SimAnnRuns/{self.file_name}{self.i}.csv", "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(columns)  
-
         self.curr_step = 1
-        self.start_T = 10.0
-        self.min_T = 1
+        self.start_T = 2.0
+        self.min_T = 0.5
         self.T = self.start_T
-        self.cool = 0.95
+        self.cool = 0.99
         self.acceptance_window = 1000
         self.recent_accepts = list()
 
-    def solve(self, N: int, pos: tuple[int, int]) -> bool:
-        board = self.ained.get_board(pos[0], pos[1], N, N)
+    def solve(self) -> bool:
+        board = self.ained.get_board(self.pos[0], self.pos[1], self.N, self.N)
         curr_energy = energy(board)
-        row, col = np.random.randint(0, N, size=2)
-        proposed_energy = self.estimate_energy(board, N, row, col)
+        row, col = np.random.randint(0, self.N, size=2)
+        proposed_energy = self.estimate_energy(board, row, col)
         delta_energy = proposed_energy - curr_energy
         if delta_energy < 0 or np.random.rand() < np.exp(-delta_energy / self.T):
-            self.ained.flip_lights(pos[0], pos[1], N, N, row, col)
-            newer_board = self.ained.get_board(pos[0], pos[0], N, N)
-            self.save_step(curr_energy, (row, col), proposed_energy, newer_board, accepted=True)
+            self.ained.flip_lights(self.pos[0], self.pos[1], self.N, self.N, row, col)
+            newer_board = self.ained.get_board(self.pos[0], self.pos[0], self.N, self.N)
             self.cool_down()
-            self.show_temp()
+            #self.show_temp()
             return True
         else:
-            self.save_step(curr_energy, (row, col), proposed_energy, board, accepted=False)
             self.cool_down()
             return False
         
-
-    def save_step(self, curr_energy: int, proposed_step: tuple[int, int], new_energy: int, accepted_board: list[int], accepted: bool):
-        """
-        Special function that logs and keeps track of energy and board states throughout Simulated Annealing.
-        It also keeps track of the acceptance ratio via the recently accepted steps.
-        """
-
-        self.recent_accepts.append(1 if accepted else 0)
-        if len(self.recent_accepts) > self.acceptance_window:
-            self.recent_accepts.pop(0)
-
-        new_row = [self.curr_step, curr_energy, proposed_step, new_energy, accepted_board, accepted]
-        with open(f"data/SimAnnRuns/{self.file_name}{self.i}.csv", "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(new_row)
-        if accepted:
-            self.curr_step += 1
-
     def __str__(self):
         return "SimAnn"
 
@@ -185,16 +154,17 @@ class SimAnnStrategy(Strategy):
     def show_temp(self):
         """ Print the current temperature and acceptance ratio """
         A = sum(self.recent_accepts) / len(self.recent_accepts)
-        print(f"Current Accept Rate: {A:0.2f}, Current Heat: {self.T:0.2f}")
+        print(self.T, A)
 
-    def estimate_energy(self, board: list[int], N: int, row: int, col: int, num_estimations=10):
+    def estimate_energy(self, board: list[int], row: int, col: int, num_estimations=10):
         """ Estimate the likely energy of a given board state after flipping a light """
         estimated_energies = list()
+        coeff = self.ained.get_coefficients()
         for i in range(num_estimations):
-            coeff = self.ained.get_coefficients()
-            for index in range(len(board)):
-                respective_row = index // N
-                respective_col = index % N
+            temp_board = board[:]
+            for index in range(len(temp_board)):
+                respective_row = index // self.N
+                respective_col = index % self.N
 
                 row_diff = abs(respective_row - row)
                 col_diff = abs(respective_col - col)
@@ -202,15 +172,86 @@ class SimAnnStrategy(Strategy):
                 if row_diff < 5 and col_diff < 5:
                     curr_coeff = coeff[row_diff * 5 + col_diff]
                     if random.random() < curr_coeff:
-                        board[index] = 1 - board[index]
-            estimated_energies.append(energy(board))
+                        temp_board[index] = 1 - temp_board[index]
+            estimated_energies.append(energy(temp_board))
 
         return np.mean(estimated_energies)
 
 
 def energy(board: list) -> int:
-    sum_energy = 0
-    for i in range(len(board)):
-        sum_energy += int(board[i])
-    return sum_energy
+    return sum(board)
+
+
+class SimAnnAdaptStrategy(Strategy):
+    """ A simulated annealing strategy that is based on MCMC with a adapting temperature. """
+    def __init__(self, ained: AiNed, pos: tuple[int, int], N: int):
+        super().__init__(ained, pos, N)
+        self.ained = ained
+        self.curr_step = 1
+        self.start_T = 2.0
+        self.best_accept = 0.15
+        self.T = self.start_T
+        self.cool = 0.99
+        self.heat = 1.01
+        self.acceptance_window = 1000
+        self.recent_accepts = list()
+
+    def solve(self) -> bool:
+        board = self.ained.get_board(self.pos[0], self.pos[1], self.N, self.N)
+        curr_energy = energy(board)
+        row, col = np.random.randint(0, self.N, size=2)
+        proposed_energy = self.estimate_energy(board, row, col)
+        delta_energy = proposed_energy - curr_energy
+        if delta_energy < 0 or np.random.rand() < np.exp(-delta_energy / self.T):
+            self.ained.flip_lights(self.pos[0], self.pos[1], self.N, self.N, row, col)
+            newer_board = self.ained.get_board(self.pos[0], self.pos[0], self.N, self.N)
+            self.recent_accepts.append(1)
+            if np.mean(self.recent_accepts) >= self.best_accept:
+                self.cool_down()
+            else:
+                self.heat_up()
+            #self.show_temp()
+            return True
+        else:
+            self.recent_accepts.append(0)
+            if np.mean(self.recent_accepts) >= self.best_accept:
+                self.cool_down()
+            else:
+                self.heat_up()
+            return False
+        
+    def __str__(self):
+        return "SimAnnAdapt"
+
+    def cool_down(self):
+        self.T *= self.cool
+            
+    def heat_up(self):
+        self.T *= self.heat
+        
+    def show_temp(self):
+        """ Print the current temperature and acceptance ratio """
+        A = sum(self.recent_accepts) / len(self.recent_accepts)
+        print(self.T, A)
+
+    def estimate_energy(self, board: list[int], row: int, col: int, num_estimations=10):
+        """ Estimate the likely energy of a given board state after flipping a light """
+        estimated_energies = list()
+        coeff = self.ained.get_coefficients()
+        for i in range(num_estimations):
+            temp_board = board[:]
+            for index in range(len(temp_board)):
+                respective_row = index // self.N
+                respective_col = index % self.N
+
+                row_diff = abs(respective_row - row)
+                col_diff = abs(respective_col - col)
+
+                if row_diff < 5 and col_diff < 5:
+                    curr_coeff = coeff[row_diff * 5 + col_diff]
+                    if random.random() < curr_coeff:
+                        temp_board[index] = 1 - temp_board[index]
+            estimated_energies.append(energy(temp_board))
+
+        return np.mean(estimated_energies)
 

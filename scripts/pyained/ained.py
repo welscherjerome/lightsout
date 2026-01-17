@@ -24,6 +24,7 @@
 
 import ctypes
 import os
+import random
 
 here = os.path.dirname(os.path.abspath(__file__))
 ained_path = os.path.join(here, "ained_c.so")
@@ -40,6 +41,7 @@ lib.ained_get_bit.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32]
 lib.ained_get_bit.restype = ctypes.c_uint32
 lib.ained_commit.argtypes = [ctypes.c_void_p]
 lib.ained_clear_memory.argtypes = [ctypes.c_void_p]
+lib.ained_clear_word.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32]
 lib.ained_print_coefficients.argtypes = [ctypes.c_void_p]
 lib.ained_print_coefficients.restype = None
 lib.ained_set_coefficients_euclidean.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.c_int]
@@ -51,6 +53,7 @@ lib.ained_print_memory.argtypes = [ctypes.c_void_p]
 lib.ained_get_coefficient_array.argtypes = [ctypes.c_void_p]
 lib.ained_get_coefficient_array.restype = ctypes.POINTER(ctypes.c_float)
 lib.ained_set_bypass.argtypes = [ctypes.c_void_p, ctypes.c_bool]
+lib.ained_destroy.argtypes = [ctypes.c_void_p]
 
 lib_lo.ained_game_not_over.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32]
 lib_lo.ained_game_not_over.restype = ctypes.c_bool
@@ -59,6 +62,7 @@ lib_lo.ained_get_board.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_ui
 lib_lo.ained_get_board.restype = ctypes.POINTER(ctypes.c_uint32)
 lib_lo.ained_free_pointer.argtypes = [ctypes.c_void_p]
 lib_lo.ained_flip_lights.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32]
+
 
 class AiNed:
     def __init__(self):
@@ -93,6 +97,10 @@ class AiNed:
     def clear(self):
         """Sets all bits in memory to 0"""
         lib.ained_clear_memory(self.handle)
+    
+    def clear_word(self, row, col):
+        """Sets all bits in a single word given the row and col of any cell that the word contains"""
+        lib.ained_clear_word(self.handle, row, col)
 
     def set_coefficients_euclidean(self, factor: float):
         """Sets the low coefficients of the coefficient matrix to certain values by using the Euclidean distance formula"""
@@ -135,3 +143,10 @@ class AiNed:
         assert (len(board) == num_row * num_col), "Specified board size must be equal to the length of the 1D board array that is to be reconstructed"
         lib_lo.ained_reconstruct_board.argtypes = [ctypes.c_void_p, ctypes.c_uint32*len(board), ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32]
         lib_lo.ained_reconstruct_board(self.handle, (ctypes.c_uint32 * len(board))(*board), start_row, start_col, num_row, num_col)
+    
+    def construct_random_board(self, start_row, start_col, num_row, num_col):
+        random_board = [0 if 0.5 < random.random() else 1 for i in range(num_row * num_col)]
+        self.reconstruct_board(random_board, start_row, start_col, num_row, num_col)
+
+    def close(self):
+        lib.ained_destroy(self.handle)
