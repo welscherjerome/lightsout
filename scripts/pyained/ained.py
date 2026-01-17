@@ -145,8 +145,11 @@ class AiNed:
         lib_lo.ained_reconstruct_board(self.handle, (ctypes.c_uint32 * len(board))(*board), start_row, start_col, num_row, num_col)
     
     def construct_random_board(self, start_row, start_col, num_row, num_col):
+        """Constructs a random board in the shared memory at the given coordinates and then returns the board as a 1D shaped list"""
         random_board = [0 if 0.5 < random.random() else 1 for i in range(num_row * num_col)]
         self.reconstruct_board(random_board, start_row, start_col, num_row, num_col)
-
+        return random_board
+    
     def close(self):
+        """Severs the connection between this class and the AiNed shared memory"""
         lib.ained_destroy(self.handle)
