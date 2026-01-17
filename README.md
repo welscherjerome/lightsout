@@ -4,7 +4,7 @@ Bachelor Thesis project about analysing a stochastic _Lights Out_ game
 
 \- _specifically designed for the PYNQ-Z2 single board computer with the AiNed emulator installed in the FPGA region_
 
-### Version 1.0.0
+### Version 1.1.0
 
 ## Description
 
