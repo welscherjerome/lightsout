@@ -144,9 +144,17 @@ class AiNed:
         lib_lo.ained_reconstruct_board.argtypes = [ctypes.c_void_p, ctypes.c_uint32*len(board), ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32]
         lib_lo.ained_reconstruct_board(self.handle, (ctypes.c_uint32 * len(board))(*board), start_row, start_col, num_row, num_col)
     
-    def construct_random_board(self, start_row, start_col, num_row, num_col):
+    def construct_random_board(self, start_row, start_col, num_row, num_col, num_lights=None):
         """Constructs a random board in the shared memory at the given coordinates and then returns the board as a 1D shaped list"""
-        random_board = [0 if 0.5 < random.random() else 1 for i in range(num_row * num_col)]
+        if num_lights is None:
+            random_board = [0 if 0.5 < random.random() else 1 for i in range((num_row*num_col)**2)]
+        else:
+            random_board = [0 for i in range((num_row*num_col)**2)]
+            for i in range(num_lights):
+                rand = random.randint(0, (num_row*num_col)**2 - 1)
+                while random_board[rand] == 1:
+                    rand = random.randint(0, self.N**2 - 1)
+                random_board[rand] = 1
         self.reconstruct_board(random_board, start_row, start_col, num_row, num_col)
         return random_board
     
