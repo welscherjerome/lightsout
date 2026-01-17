@@ -126,9 +126,11 @@ This function allows reconstructing a given 1D board list on the given coordinat
 
 _- This function uses locks and may slow down processes that run concurrently._
 
-- **def construct_random_board(start_row, start_col, num_row, num_col)**
+- **def construct_random_board(start_row, start_col, num_row, num_col, num_lights=None)**
 
 This function constructs a random board of a given dimension on the given coordinates.
+The number of random initial lights can be fixed via the num_lights parameter.
+The number of lights is random if it is not provided.
 Once finished, the constructed board is returned for further use.
 
 _- This function uses locks and may slow down processes that run concurrently._
