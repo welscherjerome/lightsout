@@ -12,7 +12,7 @@ for c in "${c_values[@]}"; do
     for i in {1..10}; do
         for j in {1..25}; do
             echo "  - Run $i/10, $j/25 for c=$c"
-            sudo python genetic.py -f "big_genetic_scramble" -g 55 -p 150 -c "$c" -l "$j"
+            sudo python ./../genetic.py -f "big_genetic_scramble" -g 55 -p 150 -c "$c" -l "$j"
         done
     done
 done
