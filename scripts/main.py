@@ -54,7 +54,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "-m", "--method", type=str, choices=["greedy", "stochastic", "simann", "simannAdapt", "simannGreedyCluster", "MCMC", "MCMCAdvanced"], default="greedy",
+        "-m", "--method", type=str, choices=["greedy", "stochastic", "simann", "simannAdapt", "MCMC"], default="greedy",
         help="[Optional] Method to use (e.g., greedy, MCMC, etc.) [default is greedy]"
     )
     parser.add_argument(
