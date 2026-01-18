@@ -112,7 +112,7 @@ _- For this implementation, generally only the low coefficients matter (Probabil
 
 This function prints the current board given start row, start column, height and width in a human-readable manner.
 
-- **game\_not\_over(start\row, start\_col, num\_row, num\_col)**
+- **game\_not\_over(start\_row, start\_col, num\_row, num\_col)**
 
 This function evaluates a board on the given coordinates if it has been solved.
 
